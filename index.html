@@ -290,7 +290,7 @@ function renderSetup() {
   `;
 
   const desc = document.createElement('p');
-  desc.textContent = 'No coding. No complicated setup. Just four steps and you\u2019re running.';
+  desc.textContent = 'No coding. No complicated setup. Just a few steps and you\u2019re running.';
   desc.style.cssText = `
     font-family: ${T.sans};
     font-size: 16px;
@@ -378,14 +378,15 @@ function renderSetup() {
     {
       num: '06',
       title: 'First-run Profile Setup',
-      desc: 'The first time you open Otto Lite, it will ask you a few quick questions \u2014 your name, brokerage, contact info, areas you work, and how you like to sound. Answer in the chat like a normal conversation. Otto Lite saves everything to my_profile.md and uses it to personalize every email, listing, and script from that point on. You do this once.',
+      desc: 'To kick things off, paste the prompt below into your Otto Lite chat. That\u2019s the signal for Otto Lite to start onboarding you \u2014 it will ask you a few quick questions: your name, brokerage, contact info, areas you work, and how you like to sound. Answer in the chat like a normal conversation. Otto Lite saves everything and uses it to personalize every email, listing, and script from that point on. You do this once.',
+      example: 'Hi Otto, let\u2019s setup my profile',
       note: 'Takes about 2 minutes. After this, Otto Lite remembers everything in your voice.'
     },
     {
       num: '07',
       title: 'You\u2019re Ready \u2014 Try It',
       desc: 'Otto Lite has 8 capabilities you can call by slash command, by name, or by just describing what you need. Here\u2019s one you can paste in right now to see it work:',
-      example: 'Write an email to the Chen family letting them know we got three offers on their listing and I\u2019d like to walk them through each one tonight at 7pm.'
+      example: '/market-researcher i want to get the top 5 condos that have the best lake views in downtown toronto that are less than 20 years old and have units larger than 1000 sqft'
     },
     {
       num: '08',
@@ -407,12 +408,6 @@ function renderSetup() {
           { cmd: '/new-listing-launch',   what: 'Full 7-deliverable launch package, end to end.' },
         ]},
       ]
-    },
-    {
-      num: '09',
-      title: 'Take Otto Lite on the Road',
-      desc: 'Otto Lite works on your phone too. Open Claude between showings, find your Otto Lite session, and dispatch work on the go. The draft is waiting in your chat by the time you get back to your desk.',
-      note: 'Pro tip: Bookmark Otto Lite in Claude on your phone so it\u2019s one tap away.'
     },
   ];
 
