@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Otto Lite — Setup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ::selection { background: #C8FF00; color: #141414; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  </style>
+</head>
+<body id="root"></body>
+
+<script type="text/plain" id="project-instructions-data">You are Otto Lite — a real estate AI assistant for a licensed real estate agent. You have access to 8 specialized capabilities: 5 skills (humanizer, market-researcher, objection-handler, crucial-conversations, email-writer), 2 assistants (executive-assistant, listing-assistant), and 1 workflow (new-listing-launch). Each one auto-triggers based on what the agent asks for. Your job is to recognize the right one, load it, and execute it in the agent's voice.
+
+# PROFILE CHECK — RUN THIS AT THE START OF EVERY CONVERSATION
+
+Before responding to anything else, follow these steps in order:
+
+## Step 1 — Load the profile file (MANDATORY Read tool call)
+
+**You MUST call the Read tool on `./my_profile.md` (relative to the current working directory) before you do anything else — every conversation, every skill invocation, no exceptions.** Do not "look for" it, do not list the directory first, do not ask the agent if it exists. Just call Read directly. The file lives at the top level of the folder the agent opened this project from.
+
+- **If the Read succeeds** → load the agent's name, brokerage, contact info, market area, tone, and sign-off into memory for the conversation, and send ONE short confirmation like: "Ready when you are, {first name}. What can I help you with?" Then stop and wait for their request. Do NOT run onboarding. Do NOT recap what's in the profile.
+
+- **If the Read returns a "file does not exist" error** → and ONLY in that case, proceed to Step 2 (first-run onboarding). Any other error (permission, path issue) — report it to the agent and stop; do not assume the profile is missing.
+
+**This applies to slash commands too.** When the agent invokes a skill via `/listing-launch`, `/email-writer`, etc., the skill's instructions take over — but your FIRST action inside that skill must still be a Read call on `./my_profile.md` unless the profile is already loaded in the current conversation's memory. Never tell the agent "I couldn't find your profile" without having actually attempted the Read.
+
+## Step 2 — First-run onboarding (only if no profile exists yet)
+
+This runs exactly once, the first time the agent uses this project. Collect everything needed to populate `my_profile.md`, then write the file.
+
+**Tone during onboarding:** warm, brief, conversational. Ask questions as plain chat messages. Do NOT use the AskUserQuestion tool for onboarding — this is a free-form conversation where the agent types their answers naturally. Do not dump all the questions at once. Ask in small groups of 2–4 at a time so it feels like a conversation, not a form.
+
+Open with something like:
+"Welcome. I'm Otto Lite — your real estate AI assistant. Before we dive in, let me ask a few quick questions so everything I write for you sounds like YOU, not a generic template. This takes about 2 minutes, and you'll only do it once."
+
+Then ask for these fields in small groups:
+
+### Group 1 — Who you are
+- Full name
+- Brokerage
+- Phone number
+- Email address
+- Website (optional)
+
+### Group 2 — Your business
+- Areas you work (neighbourhoods, city, region)
+- Specialties — luxury, first-time buyers, investment, relocations (optional)
+- Years in real estate (optional)
+- Social media handles — Instagram, Facebook, LinkedIn (optional)
+
+### Group 3 — Your brand voice
+- How should Otto Lite sound when it writes for you? Offer these options in plain text (do NOT use AskUserQuestion):
+    * Professional & Polished
+    * Warm & Approachable
+    * Casual & Friendly
+    * Luxury & Elevated
+    * "Match my style — I'll show you" (if they pick this, ask them to paste 2–3 examples of their own writing — an email, a social post, a listing description they liked)
+- How do you sign off emails? (e.g., "Best, Jessica" or "Talk soon — Mike")
+
+### Group 4 — Personal touches (optional but valuable)
+Anything Otto Lite should weave into content when it fits? Examples: dogs or pets that show up in open house stories, sports teams they sponsor or community events, pet peeves in writing ("I never use exclamation marks", "I hate the word 'stunning'"), recurring taglines or phrases, anything else that makes their voice theirs.
+
+If the agent skips a required field (name, brokerage, phone, email, areas, tone, sign-off), ask once more politely. If they still skip, note it as "not provided" and move on. Never hold the conversation hostage over a single field.
+
+## Step 3 — Save the profile
+
+After collecting everything, save `my_profile.md` to the current working directory (the same folder that contains this project). Do NOT save it inside any skill folder or subfolder — it must be at the top level of the working directory so every skill can find it.
+
+Use this exact format — no sentinel line, no extra headers, nothing else:
+
+```markdown
+# Agent Profile
+
+## Personal Information
+- **Name:** {full name}
+- **Brokerage:** {brokerage}
+- **Phone:** {phone}
+- **Email:** {email}
+- **Website:** {website or "—"}
+
+## Business Details
+- **Areas Served:** {areas}
+- **Specialties:** {specialties or "—"}
+- **Years of Experience:** {years or "—"}
+- **Social Media:**
+  - Instagram: {ig or "—"}
+  - Facebook: {fb or "—"}
+  - LinkedIn: {li or "—"}
+
+## Brand & Communication
+- **Tone:** {tone choice}
+- **Email Sign-Off:** {signoff}
+- **Signature Block:**
+  {full name}
+  {brokerage}
+  {phone} · {email}
+  {website}
+
+## Personal Touches
+{free-form bullet list of anything they shared in Group 4, or "—" if none}
+
+## Voice Samples (if provided)
+{paste any voice samples they shared, or "—" if none}
+```
+
+## Step 4 — Verify the write, then confirm
+
+After saving, verify the file actually exists at `my_profile.md` in the working directory. If the write failed for any reason, STOP and tell the agent the truth — do NOT pretend setup succeeded. A silent failure means onboarding re-runs every single conversation, which destroys the experience.
+
+Once verified, send ONE short confirmation — not a recap of everything they told you. Example:
+
+"All set, {first name}. I saved your profile. Here's what you can try now:
+
+**The 5 skills**
+- `/humanizer` or "Humanize this: [text]" — strip AI tells from anything you've written
+- `/email-writer` or "Write an email to [name] about [context]" — drafted in your voice
+- `/market-researcher` or "Research the market for [area]" — snapshot + talking points
+- `/objection-handler` or "Handle this objection: [paste]" — 5-part response playbook
+- `/crucial-conversations` or "Help me prepare for a difficult conversation about [situation]"
+
+**The 2 assistants**
+- `/executive-assistant` or "Be my executive assistant" — daily focus, action extraction, priorities
+- `/listing-assistant` or "Be my listing assistant" — MLS copy, seller emails, listing-side content
+
+**The 1 workflow**
+- `/new-listing-launch` or "New listing — [address], here are my notes: [notes]" — full 7-deliverable launch package
+
+You can invoke anything three ways: slash command, natural phrase, or just tell me what you're working on and I'll pick the right tool for you."
+
+Then share a clickable link to the profile file so they can review or edit it later, using a `computer://` link with the REAL absolute path (no placeholders, no ellipses).
+
+# USING THE PROFILE IN EVERY SKILL
+
+Once the profile is loaded (or just created), every skill you run must pull the agent's identity from it automatically:
+
+- **Name, brokerage, phone, email, website** — use these in email signatures and document footers automatically, NEVER ask for them
+- **Tone and voice samples** — match the tone choice in every piece of written content; if voice samples were provided, study them and mirror the rhythm and word choice
+- **Email sign-off** — use the exact sign-off format on every email you draft
+- **Personal touches** — weave these in when they fit naturally, never force them
+
+If any field in the profile still contains a `{placeholder}` or is marked "not provided", treat that field as missing and ask the agent to fill it in once — then update `my_profile.md` and move on.
+
+# PROFILE UPDATES LATER
+
+If the agent says something like "update my profile", "my new phone is X", "I switched to Royal LePage", or "change my sign-off to Z" — do NOT re-run full onboarding. Instead:
+
+1. Read the existing `my_profile.md`
+2. Update only the affected field
+3. Save the file back to the same path
+4. Confirm in one line: "Updated. Your new {field} is {value}."
+5. Return a clickable `computer://` link to the updated file
+
+Only re-run full onboarding if the agent explicitly asks to start over.
+
+# SKILL ROUTING — THIS IS CRITICAL
+
+When the agent's request matches ANY of the 8 capabilities — even loosely — you MUST load that skill/assistant/workflow and follow its instructions. Do NOT answer from general knowledge when a skill exists for the task. The skills exist because the agent paid for the expertise and voice that lives inside them — skipping a skill and winging it from base model defaults is a failure.
+
+Routing rules:
+
+- If the request clearly matches one capability → load it silently and execute.
+- If the request could match two capabilities → pick the closest one and run it. Don't ask which.
+- If the phrasing is loose or unusual ("fix this text", "can you clean this up", "what do I say to this buyer") → still route to the closest skill rather than answering directly. "Fix this text" → humanizer. "What do I say to this buyer" → objection-handler or email-writer depending on context.
+- If nothing matches at all → answer directly, but briefly acknowledge which skills exist in case the agent wanted one of them.
+
+The agent can invoke any capability three ways — all three are valid, never tell them they're using the "wrong" syntax:
+1. By trigger phrase ("humanize this:", "new listing —", etc.)
+2. By name ("use the humanizer", "run the listing assistant")
+3. By slash command if Cowork exposes it (`/humanizer`, `/email-writer`, etc.)
+
+Every skill automatically inherits the agent's profile from memory.
+
+# SHARING FILES BACK
+
+When any skill generates a file (an email draft, a listing description, a full listing launch package), save it to disk in the working directory under a sensible folder structure (e.g., `Listings/742-maple-drive/`) and then share clickable `computer://` links in the chat so the agent can open each file in the Cowork preview pane. Use the REAL absolute path in the link — never placeholders or ellipses. Link text should be the filename only; the full path lives in the URL.
+
+Never paste file contents back into the chat alongside the link. The link IS the deliverable.
+
+# TONE
+
+Professional, warm, confident. You sound like a top-producing real estate agent's trusted assistant — not a robot, not overly corporate, not cheerleading. Direct when you need to be, warm always. Match the agent's own tone (from their profile) when writing FOR them. Use a neutral professional tone when writing TO them.</script>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// OTTO LITE — Setup Page (standalone, matches Otto companion site style)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const T = {
+  cream:    '#F5F0EA',
+  dark:     '#141414',
+  darkCard: '#1E1E1E',
+  neon:     '#C8FF00',
+  white:    '#FFFFFF',
+  gray90:   '#0A0F17',
+  gray70:   '#757575',
+  gray60:   '#949494',
+  gray40:   '#E5E5E5',
+  gray20:   '#F2F2F2',
+  serif:    'Georgia, "Times New Roman", serif',
+  sans:     '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  mono:     '"SF Mono", Monaco, "Courier New", monospace',
+};
+
+function renderSetup() {
+  const container = document.createElement('div');
+  container.style.cssText = `background-color: ${T.cream}; min-height: 100vh;`;
+
+  // ─── Top nav (matches the Otto companion site nav bar) ──────────────
+  const nav = document.createElement('nav');
+  nav.style.cssText = `
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: ${T.white};
+    border-bottom: 1px solid ${T.gray40};
+    padding: 0 32px;
+  `;
+  const navContent = document.createElement('div');
+  navContent.style.cssText = `
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  `;
+  const logo = document.createElement('span');
+  logo.innerHTML = 'OTTO LITE <span style="font-weight: 400; letter-spacing: 1.5px; opacity: 0.5;">BY SG</span>';
+  logo.style.cssText = `
+    font-family: ${T.mono};
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: ${T.gray90};
+  `;
+  const navTag = document.createElement('span');
+  navTag.textContent = 'SETUP';
+  navTag.style.cssText = `
+    font-family: ${T.mono};
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: ${T.gray90};
+    background-color: ${T.neon};
+    padding: 6px 14px;
+    border-radius: 6px;
+  `;
+  navContent.appendChild(logo);
+  navContent.appendChild(navTag);
+  nav.appendChild(navContent);
+  container.appendChild(nav);
+
+  // ─── Main content ───────────────────────────────────────────────────
+  const content = document.createElement('div');
+  content.style.cssText = `
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  `;
+
+  const label = document.createElement('div');
+  label.textContent = 'GET STARTED';
+  label.style.cssText = `
+    font-family: ${T.mono};
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: ${T.gray60};
+    margin-bottom: 16px;
+  `;
+
+  const h2 = document.createElement('h2');
+  h2.innerHTML = 'Set Up Otto Lite in<br/>Under 5 Minutes.';
+  h2.style.cssText = `
+    font-family: ${T.serif};
+    font-size: 44px;
+    font-weight: normal;
+    color: ${T.gray90};
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  `;
+
+  const desc = document.createElement('p');
+  desc.textContent = 'No coding. No complicated setup. Just four steps and you\u2019re running.';
+  desc.style.cssText = `
+    font-family: ${T.sans};
+    font-size: 16px;
+    color: ${T.gray70};
+    margin: 0 0 48px 0;
+    line-height: 1.6;
+    font-weight: 300;
+  `;
+
+  content.appendChild(label);
+  content.appendChild(h2);
+  content.appendChild(desc);
+
+  const steps = [
+    {
+      num: '01',
+      title: 'Install Claude',
+      desc: 'Claude is the engine that powers Otto Lite. Download the free desktop app and create an account \u2014 takes about 60 seconds.',
+      action: { text: 'DOWNLOAD CLAUDE', href: 'https://claude.ai/download' },
+      note: 'Available on Mac and Windows. Already have it? Skip to Step 2.'
+    },
+    {
+      num: '02',
+      title: 'Subscribe to Claude Pro',
+      desc: 'Otto Lite runs inside Cowork mode, which requires a Claude Pro subscription. It\u2019s the same account you just made \u2014 just upgrade it once and you\u2019re set.',
+      action: { text: 'SUBSCRIBE TO CLAUDE PRO', href: 'https://claude.ai/upgrade' },
+      note: 'One subscription unlocks Cowork mode, longer conversations, and priority access.'
+    },
+    {
+      num: '03',
+      title: 'Download Otto Lite',
+      desc: 'Download your Otto Lite folder and save it to your desktop. Everything is inside \u2014 8 capabilities, ready to go.',
+      action: { text: '\u2B07  DOWNLOAD OTTO LITE', href: 'https://salesgenius.s3.ca-central-1.amazonaws.com/uploads/upload-otto-lite.zip' },
+      note: 'One folder. One download. Unzip it on your desktop before moving to Step 4.'
+    },
+    {
+      num: '04',
+      title: 'Create New Otto Lite Project',
+      desc: 'Open Claude, switch to Cowork mode, and create a new project pointed at the Otto Lite folder you just downloaded.',
+      substeps: [
+        'Open Claude and switch to Cowork mode',
+        'Click "Create new project"',
+        'Click "Choose existing folder"',
+        'Select your Otto Lite folder from your desktop',
+        'Paste the project instructions below into the project\u2019s custom instructions field'
+      ],
+      collapsible: {
+        label: 'Project instructions \u2014 click to expand & copy',
+        dataId: 'project-instructions-data'
+      },
+      note: 'The project instructions teach Otto Lite how to load your profile and route every request to the right skill. Don\u2019t skip this.'
+    },
+    {
+      num: '05',
+      title: 'Add the Skills',
+      desc: 'Otto Lite\u2019s 8 capabilities live as individual skill folders. Upload each one into your project so Cowork can invoke them.',
+      gif: { src: 'https://salesgenius.s3.ca-central-1.amazonaws.com/uploads/upload-install-cowork-skill.gif', alt: 'Walkthrough: Customize \u2192 Skills \u2192 + \u2192 Create skill \u2192 Upload skill', w: 800, h: 246 },
+      substeps: [
+        'In your Otto Lite project, click "Customize"',
+        'Click "Skills"',
+        'Click the "+" (plus) icon',
+        'Click "Create skill" \u2192 "Upload skill"',
+        'Pick one skill folder from your Otto Lite folder on your desktop',
+        'Repeat for every skill, assistant, and workflow listed below'
+      ],
+      skillList: [
+        { group: 'skills/', items: [
+          { name: 'humanizer',             path: 'otto-lite/skills/humanizer' },
+          { name: 'email-writer',          path: 'otto-lite/skills/email-writer' },
+          { name: 'market-researcher',     path: 'otto-lite/skills/market-researcher' },
+          { name: 'objection-handler',     path: 'otto-lite/skills/objection-handler' },
+          { name: 'crucial-conversations', path: 'otto-lite/skills/crucial-conversations' },
+        ]},
+        { group: 'assistants/', items: [
+          { name: 'listing-assistant',     path: 'otto-lite/assistants/listing-assistant' },
+          { name: 'executive-assistant',   path: 'otto-lite/assistants/executive-assistant' },
+        ]},
+        { group: 'workflows/', items: [
+          { name: 'new-listing-launch',    path: 'otto-lite/workflows/new-listing-launch' },
+        ]},
+      ],
+      note: 'Upload all 8. If you skip one, the matching slash command won\u2019t work until you add it.'
+    },
+    {
+      num: '06',
+      title: 'First-run Profile Setup',
+      desc: 'The first time you open Otto Lite, it will ask you a few quick questions \u2014 your name, brokerage, contact info, areas you work, and how you like to sound. Answer in the chat like a normal conversation. Otto Lite saves everything to my_profile.md and uses it to personalize every email, listing, and script from that point on. You do this once.',
+      note: 'Takes about 2 minutes. After this, Otto Lite remembers everything in your voice.'
+    },
+    {
+      num: '07',
+      title: 'You\u2019re Ready \u2014 Try It',
+      desc: 'Otto Lite has 8 capabilities you can call by slash command, by name, or by just describing what you need. Here\u2019s one you can paste in right now to see it work:',
+      example: 'Write an email to the Chen family letting them know we got three offers on their listing and I\u2019d like to walk them through each one tonight at 7pm.'
+    },
+    {
+      num: '08',
+      title: 'Know What Otto Lite Can Do',
+      desc: 'Eight capabilities, three ways to invoke each (slash command, natural phrase, or just describe the task). Otto Lite auto-routes to the right one.',
+      capabilities: [
+        { group: 'The 5 skills', items: [
+          { cmd: '/humanizer',            what: 'Strip AI tells from anything you\u2019ve written.' },
+          { cmd: '/email-writer',         what: 'One-off client emails drafted in your voice.' },
+          { cmd: '/market-researcher',    what: 'Market snapshot + client-ready talking points.' },
+          { cmd: '/objection-handler',    what: '5-part response playbook for any objection.' },
+          { cmd: '/crucial-conversations',what: 'Prep for high-stakes client conversations.' },
+        ]},
+        { group: 'The 2 assistants', items: [
+          { cmd: '/executive-assistant',  what: 'Daily focus, action extraction, priorities.' },
+          { cmd: '/listing-assistant',    what: 'MLS copy, seller emails, listing-side content.' },
+        ]},
+        { group: 'The 1 workflow', items: [
+          { cmd: '/new-listing-launch',   what: 'Full 7-deliverable launch package, end to end.' },
+        ]},
+      ]
+    },
+    {
+      num: '09',
+      title: 'Take Otto Lite on the Road',
+      desc: 'Otto Lite works on your phone too. Open Claude between showings, find your Otto Lite session, and dispatch work on the go. The draft is waiting in your chat by the time you get back to your desk.',
+      note: 'Pro tip: Bookmark Otto Lite in Claude on your phone so it\u2019s one tap away.'
+    },
+  ];
+
+  steps.forEach(step => {
+    const stepDiv = document.createElement('div');
+    stepDiv.style.cssText = `
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+      background-color: ${T.white};
+      border-radius: 16px;
+      border: 1px solid ${T.gray40};
+      padding: 28px;
+      align-items: flex-start;
+    `;
+
+    const numBadge = document.createElement('div');
+    numBadge.textContent = step.num;
+    numBadge.style.cssText = `
+      font-family: ${T.mono};
+      font-size: 14px;
+      font-weight: 700;
+      color: ${T.gray90};
+      background-color: ${T.neon};
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    `;
+
+    const stepContent = document.createElement('div');
+    stepContent.style.flex = '1';
+
+    const stepTitle = document.createElement('h3');
+    stepTitle.textContent = step.title;
+    stepTitle.style.cssText = `
+      font-family: ${T.serif};
+      font-size: 20px;
+      font-weight: normal;
+      color: ${T.gray90};
+      margin: 0 0 8px 0;
+    `;
+
+    const stepDesc = document.createElement('p');
+    stepDesc.textContent = step.desc;
+    stepDesc.style.cssText = `
+      font-family: ${T.sans};
+      font-size: 14px;
+      color: ${T.gray70};
+      margin: 0;
+      line-height: 1.6;
+    `;
+
+    stepContent.appendChild(stepTitle);
+    stepContent.appendChild(stepDesc);
+
+    // Animated walkthrough GIF (e.g. "Add the Skills" step)
+    // Breaks out of stepContent's column so it spans the full card width
+    if (step.gif) {
+      const gifWrap = document.createElement('div');
+      gifWrap.style.cssText = `
+        margin: 20px -28px 4px -96px;
+        border-top: 1px solid ${T.gray40};
+        border-bottom: 1px solid ${T.gray40};
+        overflow: hidden;
+        background-color: ${T.dark};
+        line-height: 0;
+        display: flex;
+        justify-content: center;
+      `;
+      const img = document.createElement('img');
+      img.src = step.gif.src;
+      img.alt = step.gif.alt || '';
+      img.style.cssText = `
+        display: block;
+        width: 100%;
+        height: auto;
+        max-width: ${step.gif.w}px;
+      `;
+      gifWrap.appendChild(img);
+      stepContent.appendChild(gifWrap);
+    }
+
+    if (step.action) {
+      const actionBtn = document.createElement('a');
+      actionBtn.textContent = step.action.text;
+      if (step.action.href) {
+        actionBtn.href = step.action.href;
+        if (step.action.href.startsWith('http')) actionBtn.target = '_blank';
+      }
+      actionBtn.style.cssText = `
+        display: inline-block;
+        margin-top: 16px;
+        padding: 12px 28px;
+        background-color: ${T.gray90};
+        color: ${T.white};
+        font-family: ${T.mono};
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-decoration: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      `;
+      actionBtn.addEventListener('mouseenter', () => { actionBtn.style.backgroundColor = T.neon; actionBtn.style.color = T.gray90; });
+      actionBtn.addEventListener('mouseleave', () => { actionBtn.style.backgroundColor = T.gray90; actionBtn.style.color = T.white; });
+      stepContent.appendChild(actionBtn);
+    }
+
+    if (step.substeps) {
+      const substepList = document.createElement('ol');
+      substepList.style.cssText = `
+        margin: 16px 0 0 0;
+        padding-left: 20px;
+        list-style: decimal;
+      `;
+      step.substeps.forEach(sub => {
+        const li = document.createElement('li');
+        li.textContent = sub;
+        li.style.cssText = `
+          font-family: ${T.sans};
+          font-size: 14px;
+          color: ${T.gray70};
+          line-height: 2;
+        `;
+        substepList.appendChild(li);
+      });
+      stepContent.appendChild(substepList);
+    }
+
+    // Collapsible (e.g. project instructions) — toggle + copy button + hidden pre
+    if (step.collapsible) {
+      const dataEl = document.getElementById(step.collapsible.dataId);
+      const rawText = dataEl ? dataEl.textContent.trim() : '';
+
+      const collapseWrap = document.createElement('div');
+      collapseWrap.style.cssText = `
+        margin-top: 14px;
+        border: 1px solid ${T.gray40};
+        border-radius: 10px;
+        overflow: hidden;
+        background-color: ${T.gray20};
+      `;
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.style.cssText = `
+        width: 100%;
+        background-color: ${T.gray20};
+        border: none;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        font-family: ${T.mono};
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: ${T.gray90};
+        transition: background-color 0.15s ease;
+      `;
+
+      const toggleLabel = document.createElement('span');
+      toggleLabel.textContent = step.collapsible.label;
+      const toggleArrow = document.createElement('span');
+      toggleArrow.textContent = '\u25BC';
+      toggleArrow.style.cssText = `font-size: 10px; transition: transform 0.2s ease;`;
+      toggleBtn.appendChild(toggleLabel);
+      toggleBtn.appendChild(toggleArrow);
+
+      const body = document.createElement('div');
+      body.style.cssText = `
+        display: none;
+        background-color: ${T.dark};
+        position: relative;
+      `;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'COPY ALL';
+      copyBtn.style.cssText = `
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background-color: ${T.neon};
+        color: ${T.gray90};
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-family: ${T.mono};
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        cursor: pointer;
+        z-index: 2;
+      `;
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(rawText).then(() => {
+          copyBtn.textContent = 'COPIED \u2713';
+          setTimeout(() => { copyBtn.textContent = 'COPY ALL'; }, 2000);
+        });
+      });
+
+      const pre = document.createElement('pre');
+      pre.textContent = rawText;
+      pre.style.cssText = `
+        color: rgba(255,255,255,0.8);
+        font-family: ${T.mono};
+        font-size: 11px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        margin: 0;
+        padding: 48px 24px 24px;
+        max-height: 320px;
+        overflow-y: auto;
+      `;
+
+      body.appendChild(copyBtn);
+      body.appendChild(pre);
+
+      let open = false;
+      toggleBtn.addEventListener('click', () => {
+        open = !open;
+        body.style.display = open ? 'block' : 'none';
+        toggleArrow.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+      });
+      toggleBtn.addEventListener('mouseenter', () => { toggleBtn.style.backgroundColor = T.gray40; });
+      toggleBtn.addEventListener('mouseleave', () => { toggleBtn.style.backgroundColor = T.gray20; });
+
+      collapseWrap.appendChild(toggleBtn);
+      collapseWrap.appendChild(body);
+      stepContent.appendChild(collapseWrap);
+    }
+
+    // Skill list (grouped folder checklist for the "Add the Skills" step)
+    if (step.skillList) {
+      const skWrap = document.createElement('div');
+      skWrap.style.cssText = `
+        margin-top: 16px;
+        background-color: ${T.gray20};
+        border: 1px solid ${T.gray40};
+        border-radius: 10px;
+        padding: 18px 20px;
+      `;
+      step.skillList.forEach((grp, gi) => {
+        const gLbl = document.createElement('div');
+        gLbl.textContent = grp.group;
+        gLbl.style.cssText = `
+          font-family: ${T.mono};
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: ${T.gray60};
+          margin: ${gi === 0 ? '0' : '16px'} 0 8px 0;
+        `;
+        skWrap.appendChild(gLbl);
+
+        grp.items.forEach(item => {
+          const row = document.createElement('div');
+          row.style.cssText = `
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 6px 0;
+          `;
+          const check = document.createElement('span');
+          check.textContent = '\u25A1';
+          check.style.cssText = `
+            color: ${T.gray60};
+            font-size: 14px;
+            flex-shrink: 0;
+          `;
+          const name = document.createElement('code');
+          name.textContent = item.name;
+          name.style.cssText = `
+            font-family: ${T.mono};
+            font-size: 12px;
+            color: ${T.gray90};
+            background-color: ${T.white};
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid ${T.gray40};
+          `;
+          const path = document.createElement('span');
+          path.textContent = item.path;
+          path.style.cssText = `
+            font-family: ${T.mono};
+            font-size: 11px;
+            color: ${T.gray70};
+          `;
+          row.appendChild(check);
+          row.appendChild(name);
+          row.appendChild(path);
+          skWrap.appendChild(row);
+        });
+      });
+      stepContent.appendChild(skWrap);
+    }
+
+    if (step.example) {
+      const exBlock = document.createElement('div');
+      exBlock.style.cssText = `
+        background-color: ${T.dark};
+        border-radius: 10px;
+        padding: 20px 24px;
+        margin-top: 14px;
+        position: relative;
+      `;
+      const exText = document.createElement('pre');
+      exText.textContent = step.example;
+      exText.style.cssText = `
+        color: rgba(255,255,255,0.8);
+        font-family: ${T.mono};
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        margin: 0;
+        padding-right: 60px;
+      `;
+      const exCopy = document.createElement('button');
+      exCopy.textContent = 'COPY';
+      exCopy.style.cssText = `
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background-color: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.6);
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-family: ${T.mono};
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        cursor: pointer;
+      `;
+      exCopy.addEventListener('click', () => {
+        navigator.clipboard.writeText(step.example);
+        exCopy.textContent = 'COPIED \u2713';
+        setTimeout(() => exCopy.textContent = 'COPY', 2000);
+      });
+      exBlock.appendChild(exText);
+      exBlock.appendChild(exCopy);
+      stepContent.appendChild(exBlock);
+    }
+
+    if (step.capabilities) {
+      const capsWrap = document.createElement('div');
+      capsWrap.style.cssText = `margin-top: 16px;`;
+      step.capabilities.forEach((grp, gi) => {
+        const gLbl = document.createElement('div');
+        gLbl.textContent = grp.group;
+        gLbl.style.cssText = `
+          font-family: ${T.mono};
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: ${T.gray60};
+          margin: ${gi === 0 ? '0' : '18px'} 0 10px 0;
+        `;
+        capsWrap.appendChild(gLbl);
+
+        grp.items.forEach(item => {
+          const row = document.createElement('div');
+          row.style.cssText = `
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            padding: 8px 0;
+            border-bottom: 1px solid ${T.gray20};
+          `;
+          const cmd = document.createElement('code');
+          cmd.textContent = item.cmd;
+          cmd.style.cssText = `
+            font-family: ${T.mono};
+            font-size: 12px;
+            color: ${T.gray90};
+            background-color: ${T.gray20};
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+          `;
+          const what = document.createElement('span');
+          what.textContent = item.what;
+          what.style.cssText = `
+            font-family: ${T.sans};
+            font-size: 13px;
+            color: ${T.gray70};
+            line-height: 1.5;
+          `;
+          row.appendChild(cmd);
+          row.appendChild(what);
+          capsWrap.appendChild(row);
+        });
+      });
+      stepContent.appendChild(capsWrap);
+    }
+
+    if (step.note) {
+      const noteP = document.createElement('p');
+      noteP.textContent = step.note;
+      noteP.style.cssText = `
+        font-family: ${T.sans};
+        font-size: 12px;
+        color: ${T.gray60};
+        margin-top: 12px;
+        font-style: italic;
+      `;
+      stepContent.appendChild(noteP);
+    }
+
+    stepDiv.appendChild(numBadge);
+    stepDiv.appendChild(stepContent);
+    content.appendChild(stepDiv);
+  });
+
+  // ─── Pro Tips ───────────────────────────────────────────────────────
+  const tipsDiv = document.createElement('div');
+  tipsDiv.style.marginTop = '48px';
+
+  const tipsLabel = document.createElement('div');
+  tipsLabel.textContent = 'PRO TIPS';
+  tipsLabel.style.cssText = `
+    font-family: ${T.mono};
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: ${T.gray60};
+    margin-bottom: 20px;
+  `;
+  tipsDiv.appendChild(tipsLabel);
+
+  const tipsCard = document.createElement('div');
+  tipsCard.style.cssText = `
+    background-color: ${T.white};
+    border-radius: 16px;
+    border: 1px solid ${T.gray40};
+    padding: 28px;
+  `;
+
+  const tips = [
+    { t: 'More details = better results', d: 'The more context you give Otto Lite \u2014 client names, property features, backstory \u2014 the closer the output gets to ready-to-send. Think of it like briefing a really fast assistant.' },
+    { t: 'You don\u2019t need the slash commands', d: 'Slash commands are optional. You can also just say "humanize this," "write an email to Sarah about her offer," or "help me handle this price objection." Otto Lite routes to the right skill automatically.' },
+    { t: 'Ask Otto Lite to adjust', d: 'Not quite right? Say "make it warmer" or "shorter" or "more like a friend texting, less like a realtor selling." Otto Lite remembers the whole conversation and adjusts on the fly.' },
+    { t: 'Update your profile any time', d: 'Switch brokerages? New phone number? Just say "update my profile \u2014 my new brokerage is Royal LePage" and Otto Lite updates the field without re-running the full onboarding.' },
+    { t: 'You can\u2019t break it', d: 'Type like you\u2019re texting a colleague. There\u2019s no wrong way to talk to Otto Lite \u2014 it\u2019ll figure out what you need.' },
+  ];
+
+  tips.forEach((tip, i) => {
+    const tipDiv = document.createElement('div');
+    tipDiv.style.cssText = `
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: ${i < tips.length - 1 ? `1px solid ${T.gray20}` : 'none'};
+    `;
+
+    const dot = document.createElement('div');
+    dot.style.cssText = `
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: ${T.neon};
+      flex-shrink: 0;
+      margin-top: 8px;
+    `;
+
+    const tipContent = document.createElement('div');
+    const tipTitle = document.createElement('p');
+    tipTitle.textContent = tip.t;
+    tipTitle.style.cssText = `
+      font-family: ${T.sans};
+      font-size: 14px;
+      font-weight: 600;
+      color: ${T.gray90};
+      margin: 0 0 4px 0;
+    `;
+
+    const tipDesc = document.createElement('p');
+    tipDesc.textContent = tip.d;
+    tipDesc.style.cssText = `
+      font-family: ${T.sans};
+      font-size: 13px;
+      color: ${T.gray70};
+      margin: 0;
+      line-height: 1.6;
+    `;
+
+    tipContent.appendChild(tipTitle);
+    tipContent.appendChild(tipDesc);
+    tipDiv.appendChild(dot);
+    tipDiv.appendChild(tipContent);
+    tipsCard.appendChild(tipDiv);
+  });
+
+  tipsDiv.appendChild(tipsCard);
+  content.appendChild(tipsDiv);
+  container.appendChild(content);
+
+  return container;
+}
+
+document.getElementById('root').appendChild(renderSetup());
+</script>
+</html>
